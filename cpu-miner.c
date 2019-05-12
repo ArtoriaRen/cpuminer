@@ -256,7 +256,7 @@ static struct option const options[] = {
 };
 
 struct work {
-	uint32_t data[32];
+	uint32_t data[32]; //block header
 	uint32_t target[8];
 
 	int height;
@@ -265,7 +265,7 @@ struct work {
 
 	char *job_id;
 	size_t xnonce2_len;
-	unsigned char *xnonce2;
+	unsigned char *xnonce2; // ? extraNonce in coinbase tx
 };
 
 static struct work g_work;
@@ -661,6 +661,10 @@ out:
 	return rc;
 }
 
+/**
+Print hash rate stats and block acceptance results. applog() logs a string to stderr.
+result=0 means the block is rejected.
+*/
 static void share_result(int result, const char *reason)
 {
 	char s[345];
@@ -992,7 +996,7 @@ static bool get_work(struct thr_info *thr, struct work *work)
 	if (opt_benchmark) {
 		memset(work->data, 0x55, 76);
 		work->data[17] = swab32(time(NULL));
-		memset(work->data + 19, 0x00, 52);
+		memset(work->data + 19, 0x00, 52); //nonce is set to 0. 
 		work->data[20] = 0x80000000;
 		work->data[31] = 0x00000280;
 		memset(work->target, 0x00, sizeof(work->target));
@@ -1215,6 +1219,7 @@ static void *miner_thread(void *userdata)
 			break;
 
 		case ALGO_SHA256D:
+			applog(LOG_DEBUG, "work.data[19] = %d", work.data[19]);
 			rc = scanhash_sha256d(thr_id, work.data, work.target,
 			                      max_nonce, &hashes_done);
 			break;

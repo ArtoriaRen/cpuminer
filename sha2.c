@@ -10,6 +10,7 @@
 
 #include "cpuminer-config.h"
 #include "miner.h"
+#include "hpam.h"
 
 #include <string.h>
 #include <inttypes.h>
@@ -584,6 +585,9 @@ static inline int scanhash_sha256d_8way(int thr_id, uint32_t *pdata,
 
 #endif /* HAVE_SHA256_8WAY */
 
+
+
+
 int scanhash_sha256d(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 	uint32_t max_nonce, unsigned long *hashes_done)
 {
@@ -593,7 +597,8 @@ int scanhash_sha256d(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 	uint32_t prehash[8] __attribute__((aligned(32)));
 	uint32_t n = pdata[19] - 1;
 	const uint32_t first_nonce = pdata[19];
-	const uint32_t Htarg = ptarget[7];
+	//const uint32_t Htarg = ptarget[7];
+	uint32_t hpam_tar[8] = {0}; //store hpam target
 	
 #ifdef HAVE_SHA256_8WAY
 	if (sha256_use_8way())
@@ -617,10 +622,13 @@ int scanhash_sha256d(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 	do {
 		data[3] = ++n;
 		sha256d_ms(hash, data, midstate, prehash);
-		if (swab32(hash[7]) <= Htarg) {
+		// use hpam target
+		hpam_target(hpam_tar, n, ptarget);
+
+		if (swab32(hash[7]) <= hpam_tar[7]) {
 			pdata[19] = data[3];
 			sha256d_80_swap(hash, pdata);
-			if (fulltest(hash, ptarget)) {
+			if (fulltest(hash, hpam_tar)) {
 				*hashes_done = n - first_nonce + 1;
 				return 1;
 			}
