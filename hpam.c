@@ -4,8 +4,6 @@
 
 #include "hpam.h"
 
-#define BYTES_256bits 32 // 256-bit integer has 32 bytes.
-
 void hpam_target(uint32_t hpam_tar[],const uint32_t nonce,const uint32_t* ptarget){
 	unsigned int firstBit = 0;
 	int i =0;
@@ -25,22 +23,21 @@ void add_256bit(uint32_t a[], uint32_t b[]){
 	uint64_t carry= 0, n = 0;
 	int i=0;
 
-	printf("before adding:\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
-	}
+	// printf("before adding:\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %x, \n", i, a[i]);
+	// }
 	
-	
-	for(i=1; i<8; i++){
+	for(i=0; i<8; i++){
 		n = carry + a[i] + b[i];
 		  a[i] = n &  0xffffffff;
 		carry = n >> 32;
 	}
 
-	printf("after adding:\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
-	}
+	// printf("after adding:\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %x, \n", i, a[i]);
+	// }
 }
 
 //add a uint32_t number to 256-bit number
@@ -58,7 +55,8 @@ void sub_256bit(uint32_t a[], uint32_t b[]){
 	for(; i< 8; i++){
 		neg_b[i] = ~b[i]; 
 	}
-	neg_b[i]++;
+	add_256bit_32bit(neg_b, 1);
+	// add -b to a
 	add_256bit(a, neg_b);
 }
 
@@ -66,43 +64,46 @@ void sub_256bit(uint32_t a[], uint32_t b[]){
 void multiply_256bit(uint32_t a[], uint32_t b){
 	uint64_t carry = 0;
 	int i=0;
-	printf("before multiply :\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
-	}
+	// printf("before multiply :\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %d, \n", i, a[i]);
+	// }
 	for(i=0; i<8; i++){
 		uint64_t n = carry +(uint64_t)b * a[i];
 		a[i] = n &  0xffffffff;
 		carry = n >> 32;
 	}
-	printf("after multiply :\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %x, \n", i, a[i]);
-	}
+	// printf("after multiply :\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %x, \n", i, a[i]);
+	// }
 }
 
-//in-place division
+//in-place division. This funtion also changes b.
 void divide_256bit(uint32_t a[], uint32_t b[]){
+	int a_bits = bits(a);
+	int b_bits = bits(b);
 	uint32_t rem[8];
 	// make a copy `rem` to store remainder.
 	memcpy(rem, a, BYTES_256bits); 
 	//clear `a` to store the quotient.
 	memset(a, 0, BYTES_256bits);
-	int a_bits = bits(a);
-	int b_bits = bits(b);
 	if(b_bits == 0)
 		fprintf(stderr, "division by 0");
-	if(b_bits <= a_bits){
-		int shift = a_bits - b_bits;
-		left_shift_256bit(b, shift);
-	
-		while(shift>0){
-			if(Compare(a, b) > 0){
-
-			}
-		}	
-	}
-
+	if(b_bits > a_bits)
+		return; // the result is certainly 0.
+	int shift = a_bits - b_bits;
+	left_shift_256bit(b, shift);
+	int i=0;	
+	while(shift >= 0){
+		if(Compare(rem, b) > 0){
+			sub_256bit(rem, b);
+			//set a bit of the result. use remaider of shift/32 to find the bit to set.
+			a[shift/32] |=(1<<(shift&31)); 
+		}
+		right_shift_256bit(b, 1);
+		shift--;
+	}	
 }
 
 int Compare(uint32_t a[], uint32_t b[]){
@@ -122,7 +123,6 @@ int bits(uint32_t a[]){
 	for(; i>=0; i--){
 		for(j=31; j>=0; j--){
 			if((a[i] & 1<<j) !=0){
-				printf("i=%d \n", i);
 				return 32*i + j;
 			}
 		}
@@ -134,10 +134,10 @@ int bits(uint32_t a[]){
 void left_shift_256bit(uint32_t a[], unsigned int shift){
 	uint32_t b[8] = {0};
 	int i = 0;
-	printf("before left shift:\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
-	}
+	// printf("before left shift:\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %d, \n", i, a[i]);
+	// }
 	//copy a to b
 	for(i =0; i<8; i++){
 		b[i] = a[i];
@@ -152,20 +152,20 @@ void left_shift_256bit(uint32_t a[], unsigned int shift){
 		if(i+k <8)
 			a[i+k] |= (b[i] << shift);
 	}
-	printf("after left shift:\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
-	}
+	// printf("after left shift:\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %d, \n", i, a[i]);
+	// }
 }
 
 //in-place right shift
 void right_shift_256bit(uint32_t a[], unsigned int shift){
 	uint32_t b[8] = {0};
 	int i = 0;
-	printf("before right shift:\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
-	}
+	// printf("before right shift:\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %d, \n", i, a[i]);
+	// }
 	//copy a to b
 	memcpy(b, a, BYTES_256bits);
 	//clear a
@@ -180,8 +180,8 @@ void right_shift_256bit(uint32_t a[], unsigned int shift){
 		if(i-k >= 0)
 			a[i-k] |= (b[i] >> shift);
 	}
-	printf("after right shift:\n");
-	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
-	}
+	// printf("after right shift:\n");
+	// for(i=7; i>=0; i--){
+	// 	printf("a[%d] = %d, \n", i, a[i]);
+	// }
 }

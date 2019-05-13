@@ -1,3 +1,5 @@
+#define BYTES_256bits 32 // 256-bit integer has 32 bytes.
+
 void hpam_target(uint32_t hpam_tar[],const uint32_t nonce,const uint32_t* ptarget);
 //in-place addition. 
 void add_256bit(uint32_t a[], uint32_t b[]);
