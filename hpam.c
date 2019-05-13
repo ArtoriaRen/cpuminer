@@ -20,9 +20,9 @@ void hpam_target(uint32_t hpam_tar[],const uint32_t nonce,const uint32_t* ptarge
     //hpamTarget = bnTarget/(1 + (bnTarget >> (256 - firstBit))*(nonce >> (firstBit)));//+1 to avoid divided by 0; also convert floor to ceilling.
 }
 
-//in-place addition. add a uint32_t number to 256-bit number
-void add_256bit(uint32_t a[], uint32_t b){
-	uint64_t carry= 0;
+//in-place addition. 
+void add_256bit(uint32_t a[], uint32_t b[]){
+	uint64_t carry= 0, n = 0;
 	int i=0;
 
 	printf("before adding:\n");
@@ -30,11 +30,9 @@ void add_256bit(uint32_t a[], uint32_t b){
 		printf("a[%d] = %d, \n", i, a[i]);
 	}
 	
-	uint64_t n = b + a[0];
-	a[0] = n & 0xffffffff; 
-	carry = n >> 32;
+	
 	for(i=1; i<8; i++){
-		n = carry + a[i];
+		n = carry + a[i] + b[i];
 		  a[i] = n &  0xffffffff;
 		carry = n >> 32;
 	}
@@ -43,6 +41,25 @@ void add_256bit(uint32_t a[], uint32_t b){
 	for(i=7; i>=0; i--){
 		printf("a[%d] = %d, \n", i, a[i]);
 	}
+}
+
+//add a uint32_t number to 256-bit number
+void add_256bit_32bit(uint32_t a[], uint32_t b){
+	uint32_t b_ext[8] = {0};
+	b_ext[0] = b;
+	add_256bit(a, b_ext);
+}
+
+//in-place substraction
+void sub_256bit(uint32_t a[], uint32_t b[]){
+	// negative b in 2's compliment
+	uint32_t neg_b[8] = {0};
+	int i=0;
+	for(; i< 8; i++){
+		neg_b[i] = ~b[i]; 
+	}
+	neg_b[i]++;
+	add_256bit(a, neg_b);
 }
 
 // in-place multiplication
@@ -60,7 +77,7 @@ void multiply_256bit(uint32_t a[], uint32_t b){
 	}
 	printf("after multiply :\n");
 	for(i=7; i>=0; i--){
-		printf("a[%d] = %d, \n", i, a[i]);
+		printf("a[%d] = %x, \n", i, a[i]);
 	}
 }
 
@@ -79,12 +96,24 @@ void divide_256bit(uint32_t a[], uint32_t b[]){
 		int shift = a_bits - b_bits;
 		left_shift_256bit(b, shift);
 	
-	// while(shift>0){
-	// 	if(a>b)
-	// 		a 
-	// }	
+		while(shift>0){
+			if(Compare(a, b) > 0){
+
+			}
+		}	
 	}
 
+}
+
+int Compare(uint32_t a[], uint32_t b[]){
+	int i = 7;
+	for (; i>=0; i--){
+		if(a[i] < b[i])
+			return -1;
+		if(a[i] > b[i])
+			return 1; 
+	}
+	return 0;
 }
 
 // find the first non-zero bit

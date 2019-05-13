@@ -11,7 +11,15 @@ int main(){
 	b[7] = 1;
 
 	// test addition
-	add_256bit(a, 16);
+	add_256bit(a, b);
+	assert(a[7] == 3);
+
+	// test subtraction
+	sub_256bit(a, b);
+	assert(a[7] == 2);
+
+	// test addition with 32-bit number
+	add_256bit_32bit(a, 16);
 	assert(a[7] == 2);
 	assert(a[0] == 16);
 
@@ -30,6 +38,12 @@ int main(){
 	assert(bits(a) == 225);
 	a[7] = 0;
 	assert(bits(a) == 4);
+
+	// test multiplication
+	multiply_256bit(a, 0xffffffff);
+	assert(a[0] == 0xfffffff0);
+	assert(a[1] == 0x0000000f);
+
 
 
 }
