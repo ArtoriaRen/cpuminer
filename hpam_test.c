@@ -52,14 +52,27 @@ int main(){
 
 	// test divide
 	memset(a, 0, BYTES_256bits);
-	a[7] = 2;
-	a[0] = 5;
+	a[0] = 8;
 	memset(b, 0, BYTES_256bits);
 	b[0] = 4;
 	divide_256bit(a, b);
-	assert(a[0] == 1 && a[6] == 0x80000000);
+	print_256bit(a);
+	assert(a[0] == 2);
 	printf("divide test pass! \n");
 
+	//test hpam
+	uint32_t nonce = 2523332608;
+	uint32_t hpam_tar[8] = {0}; //store hpam target
+	uint32_t normal_target[8] = {0};
+	normal_target[7] = 0x000009de;
+	normal_target[6] = 0xbb000000;
+	printf("normal_target = \n");
+	print_256bit(normal_target);
+	hpam_target(hpam_tar, nonce, normal_target);
+	printf("hpam_tar:\n");
+	print_256bit(hpam_tar);
+	assert(hpam_tar[0] == 0x984dc5ab && hpam_tar[1] == 0x26e2d5df);
+	printf("hpam target test pass! \n");
 	printf("All tests pass! \n");
 
 }

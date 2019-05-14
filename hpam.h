@@ -19,3 +19,5 @@ int bits(uint32_t a[]);
 void left_shift_256bit(uint32_t a[], unsigned int shift);
 //in-place right shift
 void right_shift_256bit(uint32_t a[], unsigned int shift);
+// print a 256-bit number
+void print_256bit(uint32_t a[]);

@@ -7,37 +7,36 @@
 void hpam_target(uint32_t hpam_tar[],const uint32_t nonce,const uint32_t* ptarget){
 	unsigned int firstBit = 0;
 	int i =0;
+	uint32_t normalTarget[2][8]; //make a copy, so we can change.
+	memcpy(normalTarget[0], ptarget, BYTES_256bits);
+	memcpy(normalTarget[1], ptarget, BYTES_256bits);
 	// find the first bit of value 1 in nonce
     for(i = 0; i< 32 && firstBit == 0; i++){
 		if((nonce & 1<< (31-i)) != 0){
 	    	firstBit = 31 - i;
 		}
     }
+    // printf("firstBit = %d\n", firstBit);
 
     // calculate HPAM target
-    //hpamTarget = bnTarget/(1 + (bnTarget >> (256 - firstBit))*(nonce >> (firstBit)));//+1 to avoid divided by 0; also convert floor to ceilling.
+    // printf("256...=%d \n", (256 - firstBit)*(nonce >> (firstBit)));
+    right_shift_256bit(normalTarget[0], (256 - firstBit)*(nonce >> (firstBit)));
+    add_256bit_32bit(normalTarget[0], 1); //+1 to avoid divided by 0; also convert floor to ceilling.
+    divide_256bit(normalTarget[1], normalTarget[0]);
+    
+    memcpy(hpam_tar, normalTarget[1], BYTES_256bits);
 }
 
-//in-place addition. 
+/* in-place addition. Most significant bits are in a[7] and b[7].
+*/
 void add_256bit(uint32_t a[], uint32_t b[]){
 	uint64_t carry= 0, n = 0;
-	int i=0;
-
-	// printf("before adding:\n");
-	// for(i=7; i>=0; i--){
-	// 	printf("a[%d] = %x, \n", i, a[i]);
-	// }
-	
+	int i=0;	
 	for(i=0; i<8; i++){
 		n = carry + a[i] + b[i];
 		  a[i] = n &  0xffffffff;
 		carry = n >> 32;
 	}
-
-	// printf("after adding:\n");
-	// for(i=7; i>=0; i--){
-	// 	printf("a[%d] = %x, \n", i, a[i]);
-	// }
 }
 
 //add a uint32_t number to 256-bit number
@@ -64,19 +63,11 @@ void sub_256bit(uint32_t a[], uint32_t b[]){
 void multiply_256bit(uint32_t a[], uint32_t b){
 	uint64_t carry = 0;
 	int i=0;
-	// printf("before multiply :\n");
-	// for(i=7; i>=0; i--){
-	// 	printf("a[%d] = %d, \n", i, a[i]);
-	// }
 	for(i=0; i<8; i++){
 		uint64_t n = carry +(uint64_t)b * a[i];
 		a[i] = n &  0xffffffff;
 		carry = n >> 32;
 	}
-	// printf("after multiply :\n");
-	// for(i=7; i>=0; i--){
-	// 	printf("a[%d] = %x, \n", i, a[i]);
-	// }
 }
 
 //in-place division. This funtion also changes b.
@@ -94,12 +85,13 @@ void divide_256bit(uint32_t a[], uint32_t b[]){
 		return; // the result is certainly 0.
 	int shift = a_bits - b_bits;
 	left_shift_256bit(b, shift);
-	int i=0;	
+	int i=0;
 	while(shift >= 0){
-		if(Compare(rem, b) > 0){
+		if(Compare(rem, b) >= 0){
 			sub_256bit(rem, b);
 			//set a bit of the result. use remaider of shift/32 to find the bit to set.
-			a[shift/32] |=(1<<(shift&31)); 
+			a[shift/32] |= (1<<(shift&31)); 
+			// printf("shift = %d, a[%d] = %x \n", shift, shift/32, a[shift/32]);
 		}
 		right_shift_256bit(b, 1);
 		shift--;
@@ -184,4 +176,11 @@ void right_shift_256bit(uint32_t a[], unsigned int shift){
 	// for(i=7; i>=0; i--){
 	// 	printf("a[%d] = %d, \n", i, a[i]);
 	// }
+}
+
+void print_256bit(uint32_t a[]){
+	int i = 7;
+	for(i=7; i>=0; i--){
+		printf("a[%d] = %x, \n", i, a[i]);
+	}
 }
