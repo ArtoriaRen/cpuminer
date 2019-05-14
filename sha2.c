@@ -560,7 +560,7 @@ static inline int scanhash_sha256d_8way(int thr_id, uint32_t *pdata,
 		}
 	}
 	
-	do {
+	// do {
 		for (i = 0; i < 8; i++)
 			data[8 * 3 + i] = ++n;
 		
@@ -569,14 +569,16 @@ static inline int scanhash_sha256d_8way(int thr_id, uint32_t *pdata,
 		for (i = 0; i < 8; i++) {
 			if (swab32(hash[8 * 7 + i]) <= Htarg) {
 				pdata[19] = data[8 * 3 + i];
+				printf("pdata[19] = %d\n", pdata[19]);
 				sha256d_80_swap(hash, pdata);
 				if (fulltest(hash, ptarget)) {
+					printf("pass full test pdata[19] = %d\n", pdata[19]);
 					*hashes_done = n - first_nonce + 1;
 					return 1;
 				}
 			}
 		}
-	} while (n < max_nonce && !work_restart[thr_id].restart);
+	// } while (n < max_nonce && !work_restart[thr_id].restart);
 	
 	*hashes_done = n - first_nonce + 1;
 	pdata[19] = n;
@@ -602,14 +604,16 @@ int scanhash_sha256d(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 	uint32_t hpam_tar[8] = {0}; //store hpam target
 	
 #ifdef HAVE_SHA256_8WAY
-	if (sha256_use_8way())
+	if (sha256_use_8way()){
 		return scanhash_sha256d_8way(thr_id, pdata, ptarget,
 			max_nonce, hashes_done);
+	}
 #endif
 #ifdef HAVE_SHA256_4WAY
-	if (sha256_use_4way())
+	if (sha256_use_4way()){
 		return scanhash_sha256d_4way(thr_id, pdata, ptarget,
 			max_nonce, hashes_done);
+	}
 #endif
 	
 	memcpy(data, pdata + 16, 64);
@@ -625,6 +629,8 @@ int scanhash_sha256d(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 		sha256d_ms(hash, data, midstate, prehash);
 		// use hpam target
 		hpam_target(hpam_tar, n, ptarget);
+		printf("hpam_tar = ");
+		print_256bit(hpam_tar);
 
 		if (swab32(hash[7]) <= hpam_tar[7]) {
 			pdata[19] = data[3];

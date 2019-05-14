@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "hpam.h"
+#include "miner.h"
 
 void hpam_target(uint32_t hpam_tar[],const uint32_t nonce,const uint32_t* ptarget){
 	unsigned int firstBit = 0;
@@ -10,6 +11,7 @@ void hpam_target(uint32_t hpam_tar[],const uint32_t nonce,const uint32_t* ptarge
 	uint32_t normalTarget[2][8]; //make a copy, so we can change.
 	memcpy(normalTarget[0], ptarget, BYTES_256bits);
 	memcpy(normalTarget[1], ptarget, BYTES_256bits);
+	applog(LOG_DEBUG, "nonce = %u \n", nonce);
 	// find the first bit of value 1 in nonce
     for(i = 0; i< 32 && firstBit == 0; i++){
 		if((nonce & 1<< (31-i)) != 0){

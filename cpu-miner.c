@@ -37,6 +37,7 @@
 #include <curl/curl.h>
 #include "compat.h"
 #include "miner.h"
+#include "color.h"
 
 #define PROGRAM_NAME		"minerd"
 #define LP_SCANTIME		60
@@ -729,8 +730,11 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 	} else if (work->txs) {
 		char *req;
 
-		for (i = 0; i < ARRAY_SIZE(work->data); i++)
-			be32enc(work->data + i, work->data[i]);
+		for (i = 0; i < ARRAY_SIZE(work->data); i++){
+			if(i != 19)
+				be32enc(work->data + i, work->data[i]);
+		}
+		printf("%s submit work->data[19] = %x, %d %s\n", KRED, work->data[19], work->data[19], KNRM);
 		bin2hex(data_str, (unsigned char *)work->data, 80);
 		if (work->workid) {
 			char *params;
@@ -749,6 +753,7 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 				"{\"method\": \"submitblock\", \"params\": [\"%s%s\"], \"id\":1}\r\n",
 				data_str, work->txs);
 		}
+		printf("req = %s\n", req);
 		val = json_rpc_call(curl, rpc_url, rpc_userpass, req, NULL, 0);
 		free(req);
 		if (unlikely(!val)) {
@@ -1031,6 +1036,7 @@ static bool get_work(struct thr_info *thr, struct work *work)
 
 static bool submit_work(struct thr_info *thr, const struct work *work_in)
 {
+	printf("submit_work.nonce = %d \n", work_in->data[19]);
 	struct workio_cmd *wc;
 	
 	/* fill out work request message */
@@ -1144,7 +1150,9 @@ static void *miner_thread(void *userdata)
 		}
 	}
 
-	while (1) {
+	int z =0;
+	while (z<3) {
+		z++;
 		unsigned long hashes_done;
 		struct timeval tv_start, tv_end, diff;
 		int64_t max64;
